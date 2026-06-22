@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrap Tool - AI Office & Utility Toolkit</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- PDF.js for client-side PDF text extraction -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+
+    <!-- Tesseract.js for client-side offline OCR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.0.2/tesseract.min.js"></script>
+
+    <!-- 
+      ========================================================================
+      ❗ PLACE YOUR GOOGLE ADSENSE SCRIPT TAG HERE 👇
+      ========================================================================
+      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+    -->
+
+    <style>
+        :root {
+            --bg-color: #090a10;
+            --card-bg: #131622;
+            --surface-variant: #1a1e30;
+            --border-color: #262a42;
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+            
+            --primary: #8b5cf6;
+            --primary-glow: rgba(139, 92, 246, 0.15);
+            --secondary: #06b6d4;
+            --secondary-glow: rgba(6, 182, 212, 0.15);
+            --tertiary: #ec4899;
+            --tertiary-glow: rgba(236, 72, 153, 0.15);
+            
+            --gradient-accent: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+            --transition-speed: 0.25s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        /* Ambient background glow */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -10%;
+            left: -10%;
+            width: 120%;
+            height: 60%;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, rgba(6, 182, 212, 0.03) 50%, rgba(0,0,0,0) 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            background: rgba(9, 10, 16, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 100;
+            padding: 1rem 1.5rem;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--text-color);
+        }
+
+        .logo-icon {
+            color: var(--secondary);
+            animation: pulse-glow 3s infinite alternate;
+        }
+
+        .logo-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.3rem;
+            letter-spacing: 1px;
+            background: var(--gradient-accent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .api-key-badge {
+            background: var(--surface-variant);
+            border: 1px solid var(--border-color);
+            padding: 0.4rem 0.8rem;
+            border-radius: 99px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+
+        .api-key-badge:hover {
+            border-color: var(--primary);
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        .api-key-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #ef4444;
+        }
+
+        .api-key-dot.connected {
+            background-color: #10b981;
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        main {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2rem;
+            z-index: 10;
+        }
+
+        /* Category Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .sidebar-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .sidebar-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            padding-left: 0.5rem;
+            font-weight: 700;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            text-align: left;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all var(--transition-speed);
+        }
+
+        .tab-btn:hover {
+            color: var(--text-color);
+            background: rgba(255, 255, 255, 0.03);
+            transform: translateX(4px);
+        }
+
+        .tab-btn.active {
+            color: var(--text-color);
+            background: var(--surface-variant);
+            border-left: 3.5px solid var(--primary);
+            box-shadow: inset 4px 0 10px rgba(0,0,0,0.2);
+        }
+
+        .tab-btn .tab-badge {
+            margin-left: auto;
+            background: var(--primary-glow);
+            color: var(--primary);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            font-size: 0.65rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 700;
+        }
+
+        /* Content Area */
+        .content-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .tool-banner {
+            background: linear-gradient(135deg, rgba(19, 22, 34, 0.8) 0%, rgba(26, 30, 48, 0.5) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-banner::after {
+            content: '';
+            position: absolute;
+            right: -20px;
+            bottom: -20px;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, var(--primary-glow) 0%, rgba(0,0,0,0) 70%);
+            pointer-events: none;
+        }
+
+        .tool-banner h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.6rem;
+            margin-bottom: 0.5rem;
+            background: var(--text-color);
+            background-clip: text;
+        }
+
+        .tool-banner p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            max-width: 80%;
+        }
+
+        /* Dynamic Tool View Workspace */
+        .workspace {
+            display: none;
+            animation: fadeIn 0.35s ease-out forwards;
+        }
+
+        .workspace.active {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        /* Inputs & Outputs layout specs */
+        .grid-half {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        textarea, input[type="text"], select {
+            width: 100%;
+            background: var(--surface-variant);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 12px;
+            padding: 1rem;
+            font-size: 0.95rem;
+            outline: none;
+            resize: none;
+            transition: all var(--transition-speed);
+        }
+
+        textarea:focus, input[type="text"]:focus, select:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 12px rgba(6, 182, 212, 0.1);
+        }
+
+        .output-box {
+            background: rgba(9, 10, 16, 0.4);
+            border: 1px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            min-height: 150px;
+            font-size: 0.95rem;
+            color: var(--text-color);
+            overflow-y: auto;
+            white-space: pre-wrap;
+            position: relative;
+        }
+
+        .output-box.placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* Button configurations */
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            background: var(--surface-variant);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 0.75rem 1.25rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all var(--transition-speed);
+        }
+
+        .btn:hover:not(:disabled) {
+            background: var(--border-color);
+            border-color: var(--text-muted);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--gradient-accent);
+            border: none;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.35);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        /* Drag & Drop Upload Zone styled professionally */
+        .upload-zone {
+            border: 2px dashed var(--border-color);
+            background: rgba(26, 30, 48, 0.3);
+            border-radius: 16px;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--secondary);
+            background: rgba(6, 182, 212, 0.02);
+        }
+
+        .upload-zone input[type="file"] {
+            display: none;
+        }
+
+        .file-info-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--surface-variant);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+        }
+
+        /* Real-time word counter visual blocks */
+        .counter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 1rem;
+        }
+
+        .counter-pill {
+            background: var(--surface-variant);
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .counter-val {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .counter-lbl {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            margin-top: 0.25rem;
+        }
+
+        /* Slider elements */
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .slider-label-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 99px;
+            background: var(--border-color);
+            outline: none;
+            transition: all var(--transition-speed);
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--secondary);
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+            transition: all var(--transition-speed);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        /* Image live previews */
+        .preview-box {
+            background: #000;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            max-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .preview-box img {
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+        }
+
+        /* Alert notifications */
+        .alert {
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: start;
+            gap: 0.75rem;
+        }
+
+        .alert-info {
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            color: #22d3ee;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 22px;
+            height: 22px;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-top: 2px solid #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Modal Overlay for API Key Setting Setup */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1.5rem;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            max-width: 500px;
+            width: 100%;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            animation: zoomIn 0.3s ease-out;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse-glow {
+            from { filter: drop-shadow(0 0 2px rgba(6, 182, 212, 0.3)); }
+            to { filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.6)); }
+        }
+
+        /* Footer styling */
+        footer {
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-color);
+            padding: 1.5rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 3rem;
+        }
+
+        /* Tablet & Mobile responsive adaptive sizing specs */
+        @media (max-width: 900px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none; /* Controlled via absolute layout or combined select list */
+            }
+
+            .toolbar-mobile-select {
+                display: block !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid-half {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .toolbar-mobile-select {
+            display: none;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="nav-container">
+            <a href="#" class="logo">
+                <i data-lucide="construction" class="logo-icon"></i>
+                <span class="logo-text">SCRAP TOOL</span>
+            </a>
+            
+            <div class="api-key-badge" onclick="openKeyModal()">
+                <div class="api-key-dot" id="apiKeyStatusDot"></div>
+                <span id="apiKeyBadgeLabel">No GEMINI API Key Connected</span>
+                <i data-lucide="key" style="width: 14px; height: 14px;"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <main>
+        
+        <!-- Sidebar Navigation Drawer for desktop -->
+        <div class="sidebar">
+            <div class="sidebar-card">
+                <div class="sidebar-title">AI Utilities</div>
+                <button class="tab-btn active" onclick="switchTool('paraphraser', this)">
+                    <i data-lucide="transform"></i> Paraphraser <span class="tab-badge">AI</span>
+                </button>
+                <button class="tab-btn" onclick="switchTool('grammar', this)">
+                    <i data-lucide="spellcheck"></i> Grammar Fix <span class="tab-badge">AI</span>
+                </button>
+                <button class="tab-btn" onclick="switchTool('usernames', this)">
+                    <i data-lucide="at-sign"></i> Usernames <span class="tab-badge">AI</span>
+                </button>
+                <button class="tab-btn" onclick="switchTool('pdf', this)">
+                    <i data-lucide="file-text"></i> PDF Summarizer <span class="tab-badge">AI</span>
+                </button>
+                <button class="tab-btn" onclick="switchTool('ocr', this)">
+                    <i data-lucide="scan"></i> OCR Scanner <span class="tab-badge">AI</span>
+                </button>
+            </div>
+
+            <div class="sidebar-card">
+                <div class="sidebar-title">Quick Tools</div>
+                <button class="tab-btn" onclick="switchTool('wordcounter', this)">
+                    <i data-lucide="binary"></i> Word Counter
+                </button>
+                <button class="tab-btn" onclick="switchTool('converter', this)">
+                    <i data-lucide="image"></i> Image Converter
+                </button>
+                <button class="tab-btn" onclick="switchTool('compressor', this)">
+                    <i data-lucide="percent"></i> Compressor
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Adaptive Navigation drop selector -->
+        <div class="content-container">
+            <select class="toolbar-mobile-select" onchange="handleMobileSelect(this)">
+                <optgroup label="AI UTILITIES">
+                    <option value="paraphraser" selected>Paraphraser</option>
+                    <option value="grammar">Grammar Fix</option>
+                    <option value="usernames">Username Generator</option>
+                    <option value="pdf">PDF Summarizer</option>
+                    <option value="ocr">OCR Scanner</option>
+                </optgroup>
+                <optgroup label="QUICK TOOLS">
+                    <option value="wordcounter">Word Counter</option>
+                    <option value="converter">Image Converter</option>
+                    <option value="compressor">Image Compressor</option>
+                </optgroup>
+            </select>
+
+            <!-- ================= WORKSPACE 1: PARAPHRASER ================= -->
+            <div id="paraphraser" class="workspace active">
+                <div class="tool-banner">
+                    <h1>Text Paraphraser</h1>
+                    <p>Powered by Google Gemini. Rephrase content seamlessly while maintaining natural readability and selected style attributes.</p>
+                </div>
+
+                <div class="card">
+                    <div class="grid-half">
+                        <div>
+                            <label><i data-lucide="edit-3" style="width:14px;"></i> Original text input</label>
+                            <textarea id="paraInput" placeholder="Paste or type content here (maximum 20,000 characters)..." style="height: 250px;"></textarea>
+                        </div>
+                        <div>
+                            <label><i data-lucide="zap" style="width:14px;"></i> Paraphrased Output</label>
+                            <div id="paraOutput" class="output-box placeholder">Generated style-focused draft will appear here...</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <label>Output Tone Style Style</label>
+                        <select id="paraStyle" style="max-width: 300px;">
+                            <option value="Professional" selected>👔 Professional</option>
+                            <option value="Casual">☕ Friendly & Casual</option>
+                            <option value="Creative">✨ Academic & Creative</option>
+                            <option value="Concise">⚡ Short & Concise</option>
+                        </select>
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn btn-primary" id="btnPara" onclick="runParaphraser()">
+                            <i data-lucide="sparkles"></i> Paraphrase Draft
+                        </button>
+                        <button class="btn" onclick="copyText('paraOutput')">
+                            <i data-lucide="copy"></i> Copy Output
+                        </button>
+                        <button class="btn btn-danger" onclick="clearPara()">
+                            <i data-lucide="refresh-cw"></i> Reset Form
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= WORKSPACE 2: GRAMMAR FIXER ================= -->
+            <div id="grammar" class="workspace">
+                <div class="tool-banner">
+                    <h1>Grammar & Spelling Fixer</h1>
+                    <p>Instantly secure and refine grammatical compositions, misplaced punctuation, and improve phrasing clarity without losing intent.</p>
+                </div>
+
+                <div class="card">
+                    <div class="grid-half">
+                        <div>
+                            <label><i data-lucide="edit" style="width:14px;"></i> Draft Text</label>
+                            <textarea id="gramInput" placeholder="Paste copy with potential spelling or structure mistakes..." style="height: 250px;"></textarea>
+                        </div>
+                        <div>
+                            <label><i data-lucide="check" style="width:14px;"></i> Corrected Version</label>
+                            <div id="gramOutput" class="output-box placeholder">Corrected copy scan will reveal details here...</div>
+                        </div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn btn-primary" id="btnGram" onclick="runGrammarFixer()">
+                            <i data-lucide="shield-check"></i> Fix Draft Grammar
+                        </button>
+                        <button class="btn" onclick="copyText('gramOutput')">
+                            <i data-lucide="copy"></i> Copy Output
+                        </button>
+                        <button class="btn btn-danger" onclick="clearGrammar()">
+                            <i data-lucide="trash-2"></i> Clear Form
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= WORKSPACE 3: USERNAME GENERATOR ================= -->
+            <div id="usernames" class="workspace">
+                <div class="tool-banner">
+                    <h1>Aesthetic Username Designer</h1>
+                    <p>Enter key details to generate 10 clean, realistic, brandable, premium usernames styled with high quality aesthetics.</p>
+                </div>
+
+                <div class="card">
+                    <div class="grid-half">
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div>
+                                <label><i data-lucide="user" style="width:14px;"></i> Keyword, Name, or Hobby</label>
+                                <input type="text" id="userInput" placeholder="E.g., Sonia, Code, Coffee, Pizza, Design...">
+                            </div>
+                            <div>
+                                <label><i data-lucide="palette" style="width:14px;"></i> Brand/Aesthetic Theme</label>
+                                <select id="userStyle">
+                                    <option value="Aesthetic" selected>🌸 Aesthetic & Pastel</option>
+                                    <option value="Cyberpunk">🌌 Cyberpunk & Futuristic</option>
+                                    <option value="Minimalist">⚪ Minimal & Clean</option>
+                                    <option value="Tech/Gamer">🎮 Esports & Tech Hacker</option>
+                                    <option value="Professional">📈 Professional & Executive</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label><i data-lucide="hash" style="width:14px;"></i> 10 Custom Generated Handles</label>
+                            <div id="userOutput" class="output-box placeholder" style="font-family: 'JetBrains Mono', monospace; line-height: 1.8;">Clean lists of brand handles appear here...</div>
+                        </div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn btn-primary" id="btnUser" onclick="runUsernameGen()">
+                            <i data-lucide="shuffle"></i> Generate Handles
+                        </button>
+                        <button class="btn" onclick="copyText('userOutput')">
+                            <i data-lucide="copy"></i> Copy List
+                        </button>
+                        <button class="btn btn-danger" onclick="clearUser()">
+                            <i data-lucide="refresh-cw"></i> Reset Keyword
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= WORKSPACE 4: PDF SUMMARIZER ================= -->
+            <div id="pdf" class="workspace">
+                <div class="tool-banner">
+                    <h1>Secure Document & PDF Summarizer</h1>
+                    <p>Extract information directly from uploaded documents or plain text files to synthesize key structured bulletin summaries.</p>
+                </div>
+
+                <div class="card">
+                    <div class="upload-zone" onclick="document.getElementById('pdfFileInput').click()">
+                        <i data-lucide="file-digit" style="width: 48px; height: 48px; color: var(--secondary);"></i>
+                        <h3>Choose or drag a PDF or Text file</h3>
+                        <p>Supports unencrypted PDF or plain text (.txt) up to 10MB</p>
+                        <input type="file" id="pdfFileInput" accept="application/pdf, text/plain" onchange="handleDocUpload(event)">
+                    </div>
+
+                    <div id="pdfInfoContainer" class="file-info-bar" style="display: none;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i data-lucide="info" style="color: var(--secondary); width:18px;"></i>
+                            <span id="pdfFileName" style="font-size: 0.9rem; font-weight: 600;">document.pdf</span>
+                            <span id="pdfFileSize" style="font-size: 0.75rem; color: var(--text-muted);">0.0 KB</span>
+                        </div>
+                        <i data-lucide="check" style="color: #10b981;"></i>
+                    </div>
+
+                    <div>
+                        <label><i data-lucide="stars" style="width:14px;"></i> Synthesized Layout Bulletin Summary</label>
+                        <div id="pdfOutput" class="output-box placeholder">Detailed summarized core highlights appear here...</div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn btn-primary" id="btnPdf" onclick="runPdfSummarizer()" disabled>
+                            <i data-lucide="book-open"></i> Summarize Document
+                        </button>
+                        <button class="btn" onclick="copyText('pdfOutput')">
+                            <i data-lucide="copy"></i> Copy Summary
+                        </button>
+                        <button class="btn btn-danger" onclick="clearPdf()">
+                            <i data-lucide="trash-2"></i> Reset File
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= WORKSPACE 5: IMAGE TO TEXT (OCR) ================= -->
+            <div id="ocr" class="workspace">
+                <div class="tool-banner">
+                    <h1>Vision Text OCR Scanner</h1>
+                    <p>Direct smart image text transcription powered by Google Gemini, offering pristine layout preservation and transcription speed.</p>
+                </div>
+
+                <div class="card">
+                    <div class="upload-zone" onclick="document.getElementById('ocrFileInput').click()">
+                        <i data-lucide="aperture" style="width: 48px; height: 48px; color: var(--tertiary);"></i>
+                        <h3>Select or Drop Image for OCR Scan</h3>
+                        <p>Upload screenshot, document image, or photograph (PNG, JPG, WEBP)</p>
+                        <input type="file" id="ocrFileInput" accept="image/*" onchange="handleOcrUpload(event)">
+                    </div>
+
+                    <!-- Image preview layout block -->
+                    <div id="ocrPreviewContainer" class="preview-box" style="display: none; margin-top: 1rem;">
+                        <img id="ocrImgPreview">
+                    </div>
+
+                    <div>
+                        <label><i data-lucide="text" style="width:14px;"></i> Transcribed Extracted Text</label>
+                        <div id="ocrOutput" class="output-box placeholder">Render transcribed layout and characters here...</div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn btn-primary" id="btnOcr" onclick="runOcrScan()" disabled>
+                            <i data-lucide="hard-drive"></i> Extract Image Text
+                        </button>
+                        <button class="btn" onclick="copyText('ocrOutput')">
+                            <i data-lucide="copy"></i> Copy Output
+                        </button>
+                        <button class="btn btn-danger" onclick="clearOcr()">
+                            <i data-lucide="refresh-ccw"></i> Reset Images
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= WORKSPACE 6: REAL-TIME WORD COUNTER ================= -->
+            <div id="wordcounter" class="workspace">
+                <div class="tool-banner">
+                    <h1>Real-Time Word & Parameter Analyzer</h1>
+                    <p>Analyze text metrics in real-time. Computes paragraph breaks, character spreads, sentence counts, and custom estimated reading and speaking times.</p>
+                </div>
+
+                <div class="card">
+                    <div>
+                        <label><i data-lucide="edit-2" style="width:14px;"></i> Input Text Area</label>
+                        <textarea id="counterInput" placeholder="Start typing details here to watch counts compute..." style="height: 180px;" oninput="computeCounterStats(this.value)"></textarea>
+                    </div>
+
+                    <div class="counter-grid">
+                        <div class="counter-pill">
+                            <div class="counter-val" id="cntWords">0</div>
+                            <div class="counter-lbl">Words</div>
+                        </div>
+                        <div class="counter-pill">
+                            <div class="counter-val" id="cntChars">0</div>
+                            <div class="counter-lbl">Characters (Spaces)</div>
+                        </div>
+                        <div class="counter-pill">
+                            <div class="counter-val" id="cntCharsNoSp">0</div>
+                            <div class="counter-lbl">Characters (No Space)</div>
+                        </div>
+                        <div class="counter-pill">
+                            <div class="counter-val" id="cntSent">0</div>
+                            <div class="counter-lbl">Sentences</div>
+                        </div>
+                        <div class="counter-pill">
+                            <div class="counter-val" id="cntPara">0</div>
+                            <div class="counter-lbl">Paragraphs</div>
+                        </div>
+                    </div>
+
+                    <div class="grid-half" style="margin-top: 0.5rem;">
+                        <div class="alert alert-info">
+                            <i data-lucide="clock" style="width:18px;"></i>
+                            <div>
+                                <strong style="display: block;">Estimated Read Time</strong>
+                                <span id="lblReadTime">0.0 minutes</span> (calculates based on 200 wpm)
+                            </div>
+                        </div>
+                        <div class="alert alert-info" style="border-color: rgba(139, 92, 246, 0.2); color: #c084fc;">
+                            <i data-lucide="mic" style="width:18px;"></i>
+                            <div>
+                                <strong style="display: block;">Estimated Speaking Time</strong>
+                                <span id="lblSpeakTime">0.0 minutes</span> (calculates based on 130 wpm)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn btn-danger" onclick="clearCounter()">
+                            <i data-lucide="trash"></i> Reset Input
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= WORKSPACE 7: IMAGE CONVERTER ================= -->
+            <div id="converter" class="workspace">
+                <div class="tool-banner">
+                    <h1>Secure Image Format Converter</h1>
+                    <p>Convert your images (JPG, PNG, WEBP) safely inside your browser canvas client-side. No remote servers ever receive your visual data.</p>
+                </div>
+
+                <div class="card">
+                    <div class="upload-zone" onclick="document.getElementById('convFileInput').click()">
+                        <i data-lucide="image" style="width: 48px; height: 48px; color: var(--secondary);"></i>
+                        <h3>Choose an image format helper</h3>
+                        <p>Upload a PNG, JPG, or WEBP image source to transform</p>
+                        <input type="file" id="convFileInput" accept="image/*" onchange="handleConvertUpload(event)">
+                    </div>
+
+                    <div id="convPreviewContainer" class="preview-box" style="display: none; margin-top: 1rem;">
+                        <img id="convImgPreview">
+                    </div>
+
+                    <div id="convFileDetails" class="file-info-bar" style="display: none;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i data-lucide="file-image" style="color: var(--secondary);"></i>
+                            <span id="convFileName">image.png</span>
+                            <span id="convFileSize" style="font-size:0.75rem; color: var(--text-muted);">0 KB</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <label>Target Format Format</label>
+                        <select id="convFormat" style="max-width: 250px;">
+                            <option value="image/png">PNG Format (.png)</option>
+                            <option value="image/jpeg">JPEG Format (.jpg)</option>
+                            <option value="image/webp">WEBP Format (.webp)</option>
+                        </select>
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn btn-primary" id="btnConvert" onclick="runConversion()" disabled>
+                            <i data-lucide="zap"></i> Convert Format
+                        </button>
+                        <button class="btn" id="btnDownloadConv" onclick="downloadConvertedFile()" disabled style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); color: #10b981;">
+                            <i data-lucide="download"></i> Download Export
+                        </button>
+                        <button class="btn btn-danger" onclick="clearConverter()">
+                            <i data-lucide="refresh-cw"></i> Clear Images
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= WORKSPACE 8: IMAGE COMPRESSOR ================= -->
+            <div id="compressor" class="workspace">
+                <div class="tool-banner">
+                    <h1>Canvas Image Compressor</h1>
+                    <p>Frictionless canvas image compression details. Optimize byte layout and downsize files directly client-side with full confidentiality.</p>
+                </div>
+
+                <div class="card">
+                    <div class="upload-zone" onclick="document.getElementById('compFileInput').click()">
+                        <i data-lucide="shrink" style="width: 48px; height: 48px; color: var(--tertiary);"></i>
+                        <h3>Choose image to optimize</h3>
+                        <p>Upload a heavy JPEG or PNG visual asset</p>
+                        <input type="file" id="compFileInput" accept="image/*" onchange="handleCompressUpload(event)">
+                    </div>
+
+                    <div id="compPreviewContainer" class="preview-box" style="display: none; margin-top: 1rem;">
+                        <img id="compImgPreview">
+                    </div>
+
+                    <div id="compStatsBar" class="grid-half" style="display: none; margin-top: 1rem;">
+                        <div class="counter-pill">
+                            <div class="counter-val" id="srcImgSize">0 KB</div>
+                            <div class="counter-lbl">Original Size</div>
+                        </div>
+                        <div class="counter-pill" style="border-color: rgba(16, 185, 129, 0.25);">
+                            <div class="counter-val" id="destImgSize" style="color: #10b981;">0 KB</div>
+                            <div class="counter-lbl" id="compressOptimizedRatio">Downsized Result</div>
+                        </div>
+                    </div>
+
+                    <div class="slider-container">
+                        <div class="slider-label-row">
+                            <span>Image Compression Level Quality</span>
+                            <span id="lblQuality">80%</span>
+                        </div>
+                        <input type="range" id="sliderQuality" min="10" max="100" value="80" oninput="updateQualityLabel(this.value)">
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn btn-primary" id="btnCompress" onclick="runCompression()" disabled>
+                            <i data-lucide="file-spreadsheet"></i> Compress Asset
+                        </button>
+                        <button class="btn" id="btnDownloadComp" onclick="downloadCompressedFile()" disabled style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); color: #10b981;">
+                            <i data-lucide="download"></i> Download Export
+                        </button>
+                        <button class="btn btn-danger" onclick="clearCompressor()">
+                            <i data-lucide="refresh-cw"></i> Reset Form
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Configure secret setting popup -->
+    <div id="apiKeyModal" class="modal">
+        <div class="modal-card">
+            <h2 style="font-family: 'Space Grotesk', sans-serif; color: var(--secondary);">Connect Google Gemini API</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
+                Scrap Tool utilizes the lightweight, cutting-edge <strong>Gemini 3.5 Flash</strong> model directly inside your browser for maximum transcription speed and privacy security.
+            </p>
+            
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+                <label>Input Gemini API Key Key</label>
+                <input type="password" id="modalAPIKeyField" placeholder="AI Studio API Key (AI_...)">
+            </div>
+
+            <div class="alert alert-info">
+                <i data-lucide="lock" style="width: 24px; height: 24px;"></i>
+                <div style="font-size: 0.75rem; line-height: 1.4;">
+                    Your key is stored securely inside your device's <strong>localStorage</strong>. Under no circumstances is it uploaded or transferred to third-party endpoints.
+                </div>
+            </div>
+
+            <div class="btn-row" style="margin-top: 1rem; justify-content: flex-end;">
+                <button class="btn" onclick="closeKeyModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveApiKey()">Save Connection</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footnote -->
+    <footer>
+        <p>&copy; 2026 Scrap Tool (AI-Powered Mobile Hybrid Office Utility Center). Fully responsive offline-capable architecture.</p>
+    </footer>
+
+    <script>
+        // Init Lucide Icons dynamically
+        lucide.createIcons();
+
+        // Application Global States
+        let GEMINI_API_KEY = "";
+        let loadedDocFile = null;
+        let loadedDocText = "";
+        let loadedOcrFile = null;
+        let loadedConvFile = null;
+        let loadedCompFile = null;
+        let convertedImageBlob = null;
+        let compressedImageBlob = null;
+
+        // Try getting API Key from Environment/Storage
+        window.addEventListener('load', () => {
+            const savedKey = localStorage.getItem("scraptool_api_key");
+            if (savedKey && savedKey.trim().startsWith("AI_")) {
+                GEMINI_API_KEY = savedKey;
+                updateApiKeyBadge(true);
+            } else {
+                updateApiKeyBadge(false);
+            }
+        });
+
+        function updateApiKeyBadge(isConnected) {
+            const dot = document.getElementById("apiKeyStatusDot");
+            const label = document.getElementById("apiKeyBadgeLabel");
+            if (isConnected) {
+                dot.className = "api-key-dot connected";
+                label.innerText = "Gemini Connected";
+                label.style.color = "#10b981";
+            } else {
+                dot.className = "api-key-dot";
+                label.innerText = "No Gemini Key Configured";
+                label.style.color = "var(--text-muted)";
+            }
+        }
+
+        function openKeyModal() {
+            document.getElementById("modalAPIKeyField").value = GEMINI_API_KEY;
+            document.getElementById("apiKeyModal").classList.add("active");
+        }
+
+        function closeKeyModal() {
+            document.getElementById("apiKeyModal").classList.remove("active");
+        }
+
+        function saveApiKey() {
+            const inputVal = document.getElementById("modalAPIKeyField").value.trim();
+            if (inputVal === "") {
+                localStorage.removeItem("scraptool_api_key");
+                GEMINI_API_KEY = "";
+                updateApiKeyBadge(false);
+                alert("API Key cleared successfully.");
+            } else {
+                localStorage.setItem("scraptool_api_key", inputVal);
+                GEMINI_API_KEY = inputVal;
+                updateApiKeyBadge(true);
+            }
+            closeKeyModal();
+        }
+
+        // Adaptive switch tab drawer
+        function switchTool(targetToolId, elementBtn) {
+            // Remove active tags on old
+            document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+            document.querySelectorAll(".workspace").forEach(view => view.classList.remove("active"));
+            
+            // Set active targets
+            elementBtn.classList.add("active");
+            document.getElementById(targetToolId).classList.add("active");
+
+            // Sync Mobile Selector
+            const selectMobile = document.querySelector(".toolbar-mobile-select");
+            selectMobile.value = targetToolId;
+        }
+
+        // Sync selective updates
+        function handleMobileSelect(elementSelect) {
+            const targetVal = elementSelect.value;
+            
+            // Un-active existing active
+            document.querySelectorAll(".workspace").forEach(view => view.classList.remove("active"));
+            document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+
+            // Toggle target activation
+            document.getElementById(targetVal).classList.add("active");
+            
+            // Highlight relative desktop button too
+            const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
+            const matchBtn = tabButtons.find(btn => btn.getAttribute("onclick").includes(targetVal));
+            if (matchBtn) {
+                matchBtn.classList.add("active");
+            }
+        }
+
+        // Word counter logic computations
+        function computeCounterStats(text) {
+            const wordsMatch = text.trim().match(/\s+/g);
+            const wordsCount = text.trim() === "" ? 0 : text.trim().split(/\s+/).filter(w => w.length > 0).length;
+            const lettersWithSp = text.length;
+            const lettersNoSp = text.replace(/\s/g, '').length;
+            
+            // Calculated sentences by basic punctuations
+            const sentencesCount = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+            // Calculated paragraphs by new lines
+            const paragraphsCount = text.split(/\n+/).filter(p => p.trim().length > 0).length;
+
+            document.getElementById("cntWords").innerText = wordsCount;
+            document.getElementById("cntChars").innerText = lettersWithSp;
+            document.getElementById("cntCharsNoSp").innerText = lettersNoSp;
+            document.getElementById("cntSent").innerText = sentencesCount;
+            document.getElementById("cntPara").innerText = paragraphsCount;
+
+            // Reading estimate: 200 wpm
+            const readMinutes = (wordsCount / 200).toFixed(1);
+            document.getElementById("lblReadTime").innerText = `${readMinutes} minutes`;
+
+            // Speaking estimate: 130 wpm
+            const speakMinutes = (wordsCount / 130).toFixed(1);
+            document.getElementById("lblSpeakTime").innerText = `${speakMinutes} minutes`;
+        }
+
+        function clearCounter() {
+            document.getElementById("counterInput").value = "";
+            computeCounterStats("");
+        }
+
+        // Reset paraphrasing content
+        function clearPara() {
+            document.getElementById("paraInput").value = "";
+            const outBox = document.getElementById("paraOutput");
+            outBox.className = "output-box placeholder";
+            outBox.innerText = "Generated style-focused draft will appear here...";
+        }
+
+        function clearGrammar() {
+            document.getElementById("gramInput").value = "";
+            const outBox = document.getElementById("gramOutput");
+            outBox.className = "output-box placeholder";
+            outBox.innerText = "Corrected copy scan will reveal details here...";
+        }
+
+        function clearUser() {
+            document.getElementById("userInput").value = "";
+            const outBox = document.getElementById("userOutput");
+            outBox.className = "output-box placeholder";
+            outBox.innerText = "Clean lists of brand handles appear here...";
+        }
+
+        function clearPdf() {
+            document.getElementById("pdfFileInput").value = "";
+            document.getElementById("pdfInfoContainer").style.display = "none";
+            document.getElementById("btnPdf").disabled = true;
+            const outBox = document.getElementById("pdfOutput");
+            outBox.className = "output-box placeholder";
+            outBox.innerText = "Detailed summarized core highlights appear here...";
+            loadedDocFile = null;
+            loadedDocText = "";
+        }
+
+        function clearOcr() {
+            document.getElementById("ocrFileInput").value = "";
+            document.getElementById("ocrPreviewContainer").style.display = "none";
+            document.getElementById("btnOcr").disabled = true;
+            const outBox = document.getElementById("ocrOutput");
+            outBox.className = "output-box placeholder";
+            outBox.innerText = "Render transcribed layout and characters here...";
+            loadedOcrFile = null;
+        }
+
+        function clearConverter() {
+            document.getElementById("convFileInput").value = "";
+            document.getElementById("convPreviewContainer").style.display = "none";
+            document.getElementById("convFileDetails").style.display = "none";
+            document.getElementById("btnConvert").disabled = true;
+            document.getElementById("btnDownloadConv").disabled = true;
+            loadedConvFile = null;
+            convertedImageBlob = null;
+        }
+
+        function clearCompressor() {
+            document.getElementById("compFileInput").value = "";
+            document.getElementById("compPreviewContainer").style.display = "none";
+            document.getElementById("compStatsBar").style.display = "none";
+            document.getElementById("btnCompress").disabled = true;
+            document.getElementById("btnDownloadComp").disabled = true;
+            loadedCompFile = null;
+            compressedImageBlob = null;
+        }
+
+        // ========================================================
+        // 🚀 CLIENT-SIDE GEMINI REST FETCH API CONNECTION
+        // ========================================================
+        async function fetchGeminiAPI(promptText) {
+            if (!GEMINI_API_KEY) {
+                openKeyModal();
+                throw new Error("Please connect a valid Google Gemini API Key first.");
+            }
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            const reqBody = {
+                contents: [
+                    { parts: [{ text: promptText }] }
+                ]
+            };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(reqBody)
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                const code = response.status;
+                if (code === 400) throw new Error("Invalid format or prompt configuration.");
+                if (code === 403) throw new Error("Unauthorized: Invalid API key credentials.");
+                if (code === 429) throw new Error("Resource Quota Exceeded. Please query later.");
+                throw new Error(errData?.error?.message || "Internal API Communication Error.");
+            }
+
+            const resData = await response.json();
+            const resultText = resData?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!resultText) {
+                throw new Error("Empty visual content returned.");
+            }
+            return resultText;
+        }
+
+        // ==========================================
+        // 💡 TOOL ACTIONS IMPLEMENTATIONS
+        // ==========================================
+
+        // Helper to format bytes efficiently
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function setButtonLoading(btnId, isLoading, labelText) {
+            const btn = document.getElementById(btnId);
+            if (isLoading) {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="spinner"></span> Working...`;
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = labelText;
+            }
+        }
+
+        async function runParaphraser() {
+            const input = document.getElementById("paraInput").value.trim();
+            const style = document.getElementById("paraStyle").value;
+            const outputBox = document.getElementById("paraOutput");
+
+            if (!input) {
+                alert("Please enter original text to paraphrase.");
+                return;
+            }
+
+            setButtonLoading("btnPara", true, `<i class="sparkles" data-lucide="sparkles"></i> Paraphrase Draft`);
+            outputBox.className = "output-box";
+            outputBox.innerText = "Analyzing text draft styles...";
+            lucide.createIcons();
+
+            try {
+                const prompt = `Rephrase this content directly into a ${style} voice layout. Standardize flow and syntax attributes. Return only the reprocessed text drafts without extra conversations:\n\n${input}`;
+                const response = await fetchGeminiAPI(prompt);
+                outputBox.innerText = response.trim();
+            } catch (err) {
+                outputBox.className = "output-box placeholder";
+                outputBox.innerHTML = `<span style="color: #ef4444;">${err.message}</span>`;
+            } finally {
+                setButtonLoading("btnPara", false, `<i data-lucide="sparkles"></i> Paraphrase Draft`);
+                lucide.createIcons();
+            }
+        }
+
+        async function runGrammarFixer() {
+            const input = document.getElementById("gramInput").value.trim();
+            const outputBox = document.getElementById("gramOutput");
+
+            if (!input) {
+                alert("Please enter draft text with errors first.");
+                return;
+            }
+
+            setButtonLoading("btnGram", true, `<i data-lucide="shield-check"></i> Fix Draft Grammar`);
+            outputBox.className = "output-box";
+            outputBox.innerText = "Checking spelling, grammatical flow, and syntaxes...";
+
+            try {
+                const prompt = `Identify and fix spelling, grammar structure and contextual discrepancies in this paragraph block. Keep details legible without extra outlines:\n\n${input}`;
+                const response = await fetchGeminiAPI(prompt);
+                outputBox.innerText = response.trim();
+            } catch (err) {
+                outputBox.className = "output-box placeholder";
+                outputBox.innerHTML = `<span style="color: #ef4444;">${err.message}</span>`;
+            } finally {
+                setButtonLoading("btnGram", false, `<i data-lucide="shield-check"></i> Fix Draft Grammar`);
+                lucide.createIcons();
+            }
+        }
+
+        async function runUsernameGen() {
+            const keyword = document.getElementById("userInput").value.trim();
+            const style = document.getElementById("userStyle").value;
+            const outputBox = document.getElementById("userOutput");
+
+            if (!keyword) {
+                alert("Please enter reference names/keywords.");
+                return;
+            }
+
+            setButtonLoading("btnUser", true, `<i data-lucide="shuffle"></i> Generate Handles`);
+            outputBox.className = "output-box";
+            outputBox.innerText = "Sieving database indices for unique handles...";
+
+            try {
+                const prompt = `Generate exactly 10 premium, highly creative handle design variations for keywords of interest '${keyword}' strictly matching ${style} styles. Output as cleanly separate bulletless new lines:`;
+                const response = await fetchGeminiAPI(prompt);
+                outputBox.innerText = response.trim();
+            } catch (err) {
+                outputBox.className = "output-box placeholder";
+                outputBox.innerHTML = `<span style="color: #ef4444;">${err.message}</span>`;
+            } finally {
+                setButtonLoading("btnUser", false, `<i data-lucide="shuffle"></i> Generate Handles`);
+                lucide.createIcons();
+            }
+        }
+
+        // ==========================================
+        // 📁 PDF/TXT EXTRACTS & SUMMARIZE SCRIPT CODE
+        // ==========================================
+        function handleDocUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            loadedDocFile = file;
+            document.getElementById("pdfFileName").innerText = file.name;
+            document.getElementById("pdfFileSize").innerText = formatBytes(file.size);
+            document.getElementById("pdfInfoContainer").style.display = "flex";
+            
+            const btn = document.getElementById("btnPdf");
+            btn.disabled = false;
+
+            if (file.type === "text/plain") {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    loadedDocText = evt.target.result;
+                };
+                reader.readAsText(file);
+            } else if (file.type === "application/pdf") {
+                // PDF processing
+                loadedDocText = ""; // Compiled via extractPdfText asynch
+            }
+        }
+
+        async function extractPdfText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async function() {
+                    try {
+                        const typedarray = new Uint8Array(this.result);
+                        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+                        
+                        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                        let textContent = "";
+                        const maxPages = Math.min(pdf.numPages, 10); // Limit context blocks
+                        
+                        for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+                            const page = await pdf.getPage(pageNum);
+                            const textObj = await page.getTextContent();
+                            const pageText = textObj.items.map(item => item.str).join(" ");
+                            textContent += pageText + "\n";
+                        }
+                        
+                        resolve(textContent);
+                    } catch (e) {
+                        reject(new Error("Failed to parse PDF document blocks: " + e.message));
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        async function runPdfSummarizer() {
+            if (!loadedDocFile) return;
+
+            const outputBox = document.getElementById("pdfOutput");
+            setButtonLoading("btnPdf", true, `<i data-lucide="book-open"></i> Summarize Document`);
+            outputBox.className = "output-box";
+            outputBox.innerText = "Extracting document strings & parameters...";
+
+            try {
+                let contextText = loadedDocText;
+                if (loadedDocFile.type === "application/pdf" && !contextText) {
+                    contextText = await extractPdfText(loadedDocFile);
+                }
+
+                if (!contextText.trim()) {
+                    throw new Error("Failed to retrieve text content. Verify file layout is readable.");
+                }
+
+                outputBox.innerText = "Summarizing data parameters via secure AI channels...";
+                const prompt = `Synthesize bulleted brief summary from details. Structure layout outputs with clear headers:\n\n${contextText.slice(0, 15000)}`;
+                const response = await fetchGeminiAPI(prompt);
+                outputBox.innerText = response.trim();
+            } catch (err) {
+                outputBox.className = "output-box placeholder";
+                outputBox.innerHTML = `<span style="color: #ef4444;">${err.message}</span>`;
+            } finally {
+                setButtonLoading("btnPdf", false, `<i data-lucide="book-open"></i> Summarize Document`);
+                lucide.createIcons();
+            }
+        }
+
+        // ==========================================
+        // 📷 OCR UTILITIES CODING
+        // ==========================================
+        function handleOcrUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            loadedOcrFile = file;
+            const container = document.getElementById("ocrPreviewContainer");
+            const preview = document.getElementById("ocrImgPreview");
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                preview.src = evt.target.result;
+                container.style.display = "flex";
+            };
+            reader.readAsDataURL(file);
+
+            document.getElementById("btnOcr").disabled = false;
+        }
+
+        async function runOcrScan() {
+            if (!loadedOcrFile) return;
+
+            const outputBox = document.getElementById("ocrOutput");
+            setButtonLoading("btnOcr", true, `<i data-lucide="hard-drive"></i> Extract Image Text`);
+            outputBox.className = "output-box";
+            outputBox.innerText = "Initializing vision transcription metrics...";
+
+            try {
+                // Tesseract.js client side OCR
+                const worker = await Tesseract.createWorker();
+                await worker.loadLanguage('eng');
+                await worker.initialize('eng');
+                
+                outputBox.innerText = "Decoding layout visual texts...";
+                const ret = await worker.recognize(loadedOcrFile);
+                await worker.terminate();
+
+                if (!ret.data.text.trim()) {
+                    outputBox.className = "output-box placeholder";
+                    outputBox.innerText = "No printable text detected inside this image layout.";
+                } else {
+                    outputBox.innerText = ret.data.text.trim();
+                }
+            } catch (err) {
+                outputBox.className = "output-box placeholder";
+                outputBox.innerHTML = `<span style="color: #ef4444;">Ocr scan engine error: ${err.message}</span>`;
+            } finally {
+                setButtonLoading("btnOcr", false, `<i data-lucide="hard-drive"></i> Extract Image Text`);
+                lucide.createIcons();
+            }
+        }
+
+        // ==========================================
+        // 🖼️ IMAGE CONVERTER CODE
+        // ==========================================
+        function handleConvertUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            loadedConvFile = file;
+            document.getElementById("convFileName").innerText = file.name;
+            document.getElementById("convFileSize").innerText = formatBytes(file.size);
+            document.getElementById("convFileDetails").style.display = "flex";
+
+            const container = document.getElementById("convPreviewContainer");
+            const preview = document.getElementById("convImgPreview");
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                preview.src = evt.target.result;
+                container.style.display = "flex";
+            };
+            reader.readAsDataURL(file);
+
+            document.getElementById("btnConvert").disabled = false;
+            document.getElementById("btnDownloadConv").disabled = true;
+        }
+
+        function runConversion() {
+            if (!loadedConvFile) return;
+
+            const targetMime = document.getElementById("convFormat").value;
+            const imgPreview = document.getElementById("convImgPreview");
+            const btn = document.getElementById("btnConvert");
+
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner"></span> Converting...`;
+
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            const img = new Image();
+
+            img.onload = function() {
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                ctx.drawImage(img, 0, 0);
+
+                canvas.toBlob((blob) => {
+                    convertedImageBlob = blob;
+                    btn.disabled = false;
+                    btn.innerHTML = `<i data-lucide="zap"></i> Convert Format`;
+                    document.getElementById("btnDownloadConv").disabled = false;
+                    alert("Conversion completed successfully! Click download.");
+                    lucide.createIcons();
+                }, targetMime, 1.0);
+            };
+
+            img.src = imgPreview.src;
+        }
+
+        function downloadConvertedFile() {
+            if (!convertedImageBlob) return;
+            const mimeType = document.getElementById("convFormat").value;
+            const ext = mimeType.split("/")[1].replace("jpeg", "jpg");
+            
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(convertedImageBlob);
+            link.download = `scraptool_converted_${Date.now()}.${ext}`;
+            link.click();
+        }
+
+        // ==========================================
+        // 📉 IMAGE COMPRESSOR CODE
+        // ==========================================
+        function handleCompressUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            loadedCompFile = file;
+            document.getElementById("srcImgSize").innerText = formatBytes(file.size);
+            document.getElementById("compStatsBar").style.display = "grid";
+
+            const container = document.getElementById("compPreviewContainer");
+            const preview = document.getElementById("compImgPreview");
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                preview.src = evt.target.result;
+                container.style.display = "flex";
+            };
+            reader.readAsDataURL(file);
+
+            document.getElementById("btnCompress").disabled = false;
+            document.getElementById("btnDownloadComp").disabled = true;
+        }
+
+        function updateQualityLabel(val) {
+            document.getElementById("lblQuality").innerText = `${val}%`;
+        }
+
+        function runCompression() {
+            if (!loadedCompFile) return;
+
+            const qPercent = parseInt(document.getElementById("sliderQuality").value);
+            const qualityValue = qPercent / 100;
+            const imgPreview = document.getElementById("compImgPreview");
+            const btn = document.getElementById("btnCompress");
+
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner"></span> Compressing...`;
+
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            const img = new Image();
+
+            img.onload = function() {
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                ctx.drawImage(img, 0, 0);
+
+                canvas.toBlob((blob) => {
+                    compressedImageBlob = blob;
+                    btn.disabled = false;
+                    btn.innerHTML = `<i data-lucide="file-spreadsheet"></i> Compress Asset`;
+                    document.getElementById("btnDownloadComp").disabled = false;
+                    
+                    document.getElementById("destImgSize").innerText = formatBytes(blob.size);
+                    const savingInfo = ((1 - (blob.size / loadedCompFile.size)) * 100).toFixed(1);
+                    document.getElementById("compressOptimizedRatio").innerText = `Optimized Size (-${savingInfo}%)`;
+                    lucide.createIcons();
+                }, "image/jpeg", qualityValue);
+            };
+
+            img.src = imgPreview.src;
+        }
+
+        function downloadCompressedFile() {
+            if (!compressedImageBlob) return;
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(compressedImageBlob);
+            link.download = `scraptool_compressed_${Date.now()}.jpg`;
+            link.click();
+        }
+
+        // Clip board generic helper text parser
+        function copyText(elementId) {
+            const el = document.getElementById(elementId);
+            const textToCopy = el.innerText || el.value;
+
+            if (!textToCopy || el.classList.contains("placeholder")) {
+                alert("Nothing to copy yet!");
+                return;
+            }
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert("Text output copied to clipboard!");
+            }).catch(err => {
+                alert("Failed to copy clipboard context: " + err.message);
+            });
+        }
+    </script>
+</body>
+</html>

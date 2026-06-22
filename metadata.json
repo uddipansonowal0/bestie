@@ -1,0 +1,6 @@
+{
+  "name": "Scrap Tool",
+  "description": "Scrap Tool is a collection of lightweight, futuristic, and fast AI-powered and utility office tools of premium visual craft.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
